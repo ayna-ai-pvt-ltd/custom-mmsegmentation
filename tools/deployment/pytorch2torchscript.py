@@ -202,3 +202,6 @@ if __name__ == '__main__':
         show=args.show,
         output_file=args.output_file,
         verify=args.verify)
+
+
+# python tools/deployment/pytorch2torchscript.py configs/segformer/segformer_b5_768x1024_custom.py --checkpoint /home/ubuntu/mmsegmentation/20000.pth --shape 1024 768 --verify
