@@ -9,6 +9,9 @@ from mmengine import Config
 from mmengine.runner import load_checkpoint
 from torch import nn
 
+from mmseg.utils import register_all_modules
+register_all_modules(init_default_scope=True)
+
 from mmseg.models import build_segmentor
 
 torch.manual_seed(3)
@@ -175,6 +178,22 @@ if __name__ == '__main__':
 
     if args.checkpoint:
         load_checkpoint(segmentor, args.checkpoint, map_location='cpu')
+
+    import torch.nn.functional as F, types, torch.nn as nn
+
+    def forward_dummy(self, img):
+        feats = self.extract_feat(img)
+        seg = (self.decode_head[-1](feats) if isinstance(self.decode_head, nn.ModuleList)
+            else self.decode_head(feats))
+        # upsample here ⬇︎
+        seg = F.interpolate(seg, size=img.shape[-2:], mode='bilinear', align_corners=False)
+        return seg
+
+    segmentor.forward_dummy = types.MethodType(forward_dummy, segmentor)
+
+    for m in segmentor.modules():
+        if hasattr(m, 'with_cp'):
+            m.with_cp = False
 
     # convert the PyTorch model to LibTorch model
     pytorch2libtorch(
